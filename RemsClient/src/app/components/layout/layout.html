@@ -1,0 +1,61 @@
+<div class="vh-100 d-flex flex-column overflow-hidden bg-light">
+  <header
+    class="navbar navbar-expand-lg border-bottom bg-dark px-3"
+    style="height: 64px; z-index: 1030"
+  >
+    <div class="container-fluid">
+      <span class="navbar-brand text-white fw-bold mb-0 h1">Real Estate Management System</span>
+      <div class="d-flex align-items-center text-white">
+        {{ userName }} |
+        <span role="button" class="text-danger ms-1" (click)="logout()">Logout</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="d-flex flex-grow-1 overflow-hidden">
+    <nav
+      class="bg-white border-end d-none d-md-flex flex-column py-3"
+      style="width: 240px; min-width: 240px; flex-shrink: 0; z-index: 1020"
+    >
+      <div class="list-group list-group-flush w-100">
+        <a
+          routerLink="/properties"
+          routerLinkActive="border-start border-4 border-primary bg-light text-primary fw-bold"
+          class="list-group-item list-group-item-action border-0 py-3 px-4"
+        >
+          Properties
+        </a>
+        @if (!isAdmin) {
+          <a
+            routerLink="/area-analysis"
+            routerLinkActive="border-start border-4 border-primary bg-light text-primary fw-bold"
+            class="list-group-item list-group-item-action border-0 py-3 px-4"
+          >
+            Area Analysis
+          </a>
+        }
+        @if (isAdmin) {
+          <a
+            routerLink="/users"
+            routerLinkActive="border-start border-4 border-primary bg-light text-primary fw-bold"
+            class="list-group-item list-group-item-action border-0 py-3 px-4"
+          >
+            User Management
+          </a>
+        }
+        @if (isAdmin) {
+          <a
+            routerLink="/logs"
+            routerLinkActive="border-start border-4 border-primary bg-light text-primary fw-bold"
+            class="list-group-item list-group-item-action border-0 py-3 px-4"
+          >
+            System Logs
+          </a>
+        }
+      </div>
+    </nav>
+    <main class="flex-grow-1 overflow-auto p-4 bg-light">
+      <router-outlet></router-outlet>
+    </main>
+  </div>
+</div>

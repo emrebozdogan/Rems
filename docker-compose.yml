@@ -1,0 +1,17 @@
+services:
+  postgres-db:
+    image: postgis/postgis:latest
+    platform: linux/amd64
+    container_name: rems_postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 21062001
+      POSTGRES_DB: RemsDb
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql
+    restart: unless-stopped
+
+volumes:
+  pgdata:

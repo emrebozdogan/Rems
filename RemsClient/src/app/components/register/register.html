@@ -1,0 +1,97 @@
+@if (errorMessage()) {
+  <div
+    class="alert alert-danger alert-dismissible fade show w-50 mx-auto mt-2 fixed-top"
+    role="alert"
+  >
+    <button type="button" class="btn-close" (click)="closeAlert()"></button>
+    {{ errorMessage() }}
+  </div>
+}
+@if (isRegistered()) {
+  <div
+    class="alert alert-success alert-dismissible fade show w-50 mx-auto mt-2 fixed-top"
+    role="alert"
+  >
+    <button type="button" class="btn-close" (click)="closeAlert()"></button>
+    {{ 'Successfully registered' }}
+  </div>
+}
+<div class="rems-auth">
+  <div class="rems-auth__left d-flex justify-content-center align-items-center">
+    <div class="w-100" style="max-width: 360px">
+      <form
+        class="d-flex flex-column align-items-center pt-2"
+        [formGroup]="registerForm"
+        (ngSubmit)="onSubmit()"
+      >
+        <h2 class="fw-bold mb-1">Welcome</h2>
+        <p class="text-muted mb-4">Please sign up to use REMS</p>
+        <div class="form-floating mb-3 mt-3">
+          <input
+            type="text"
+            class="form-control"
+            id="name"
+            placeholder="Enter name"
+            name="name"
+            formControlName="name"
+          />
+          @if (registerForm.get('name')?.invalid && registerForm.get('name')?.touched) {
+            <small class="text-danger ms-2">Enter a valid name.</small>
+          }
+          <label for="name">Name</label>
+        </div>
+        <div class="form-floating mb-3 mt-3">
+          <input
+            type="email"
+            class="form-control"
+            id="email"
+            placeholder="Enter email"
+            name="email"
+            formControlName="email"
+          />
+          @if (registerForm.get('email')?.invalid && registerForm.get('email')?.touched) {
+            <small class="text-danger ms-2">Enter a valid email.</small>
+          }
+          <label for="email">Email</label>
+        </div>
+        <div class="form-floating my-3">
+          <input
+            type="password"
+            class="form-control"
+            id="password"
+            placeholder="Enter password"
+            name="password"
+            formControlName="password"
+          />
+          <label for="password">Password</label>
+        </div>
+        @if (registerForm.get('password')?.invalid && registerForm.get('password')?.touched) {
+          @if (
+            registerForm.get('password')?.errors?.['minlength'] ||
+            registerForm.get('password')?.errors?.['maxlength']
+          ) {
+            <small class="text-danger mb-3"
+              >Your password must be between 8 and 12 characters long.</small
+            >
+          } @else if (registerForm.get('password')?.errors?.['pattern']) {
+            <small class="text-danger mb-3"
+              >Password must include at least one letter, one number, and one special
+              character.</small
+            >
+          }
+        }
+        <div class="d-flex gap-2">
+          <button type="button" routerLink="/login" class="btn btn-outline-success">Login</button>
+          <button type="submit" class="btn btn-primary" [disabled]="registerForm.invalid">
+            Register
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+  <div class="rems-auth__right">
+    <div class="rems-brand">
+      <h1 class="display-4 fw-bold mb-3">Real Estate<br />Management System</h1>
+    </div>
+  </div>
+</div>

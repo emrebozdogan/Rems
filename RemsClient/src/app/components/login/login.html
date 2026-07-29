@@ -1,0 +1,70 @@
+@if (errorMessage()) {
+  <div
+    class="alert alert-danger alert-dismissible fade show w-50 mx-auto mt-2 fixed-top"
+    role="alert"
+  >
+    <button type="button" class="btn-close" (click)="closeAlert()"></button>
+    {{ errorMessage() }}
+  </div>
+}
+@if (loggedIn()) {
+  <div
+    class="alert alert-success alert-dismissible fade show w-50 mx-auto mt-2 fixed-top"
+    role="alert"
+  >
+    <button type="button" class="btn-close" (click)="closeAlert()"></button>
+    {{ 'Successfully logged in' }}
+  </div>
+}
+<div class="rems-auth">
+  <div class="rems-auth__left d-flex justify-content-center align-items-center">
+    <div class="w-100" style="max-width: 360px">
+      <form
+        class="d-flex flex-column align-items-center pt-2"
+        [formGroup]="loginForm"
+        (ngSubmit)="onSubmit()"
+      >
+        <h2 class="fw-bold mb-1">Welcome Back</h2>
+        <p class="text-muted mb-4">Sign in to your REMS account</p>
+        <div class="form-floating mb-3 mt-3">
+          <input
+            type="email"
+            class="form-control"
+            id="email"
+            placeholder="Enter email"
+            name="email"
+            formControlName="email"
+          />
+          @if (loginForm.get('email')?.invalid && loginForm.get('email')?.touched) {
+            <small class="text-danger ms-2">Enter a valid email.</small>
+          }
+          <label for="email">Email</label>
+        </div>
+        <div class="form-floating mt-3 mb-3">
+          <input
+            type="password"
+            class="form-control"
+            id="password"
+            placeholder="Enter password"
+            name="password"
+            formControlName="password"
+          />
+          <label for="password">Password</label>
+        </div>
+        <div class="d-flex gap-2">
+          <button type="submit" class="btn btn-success" [disabled]="loginForm.invalid">
+            Login
+          </button>
+          <button type="button" routerLink="/register" class="btn btn-outline-primary">
+            Register
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+  <div class="rems-auth__right">
+    <div class="rems-brand">
+      <h1 class="display-4 fw-bold mb-3">Real Estate<br />Management System</h1>
+    </div>
+  </div>
+</div>

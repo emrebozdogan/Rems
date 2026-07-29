@@ -1,0 +1,54 @@
+.rems-auth {
+  display: flex;
+  min-height: 100vh;
+  width: 100%;
+}
+
+.rems-auth__left {
+  flex: 0 0 40%;
+  background: #ffffff;
+  padding: 2rem;
+}
+
+.rems-auth__right {
+  flex: 0 0 60%;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #0f172a, #1e293b);
+  overflow: hidden;
+}
+
+.rems-auth__right::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 20% 30%, rgba(56, 189, 248, 0.15), transparent 40%),
+    radial-gradient(circle at 80% 70%, rgba(13, 110, 253, 0.18), transparent 45%);
+  pointer-events: none;
+}
+
+.rems-brand {
+  position: relative;
+  z-index: 2;
+  max-width: 540px;
+  padding: 3rem;
+  color: #fff;
+}
+
+@media (max-width: 992px) {
+  .rems-auth {
+    flex-direction: column;
+  }
+
+  .rems-auth__left,
+  .rems-auth__right {
+    flex: 1 1 100%;
+  }
+
+  .rems-auth__right {
+    display: none;
+  }
+}
