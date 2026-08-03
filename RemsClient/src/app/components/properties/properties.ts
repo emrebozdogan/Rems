@@ -38,6 +38,7 @@ import { forkJoin, of } from 'rxjs';
 })
 export class Properties implements OnInit, AfterViewInit {
   map!: Map;
+  modalMap!: Map;
   propertyVectorSource = new VectorSource();
   intersectionVectorSource = new VectorSource();
   drawSource = new VectorSource();
@@ -193,6 +194,34 @@ export class Properties implements OnInit, AfterViewInit {
       } else if (popupElement) {
         popupElement.style.display = 'none';
       }
+    });
+  }
+
+  initModalMap(targetId: string): void {
+    if (this.modalMap) {
+      this.modalMap.setTarget(undefined);
+    }
+    this.modalMap = new Map({
+      target: targetId,
+      layers: [
+        new TileLayer({
+          source: new OSM(),
+        }),
+        new VectorLayer({
+          source: this.drawSource,
+          style: {
+            'fill-color': 'rgba(255,255,255, 0.2)',
+            'stroke-color': '#ffcc33',
+            'stroke-width': 2,
+            'circle-radius': 7,
+            'circle-fill-color': '#ffcc33',
+          },
+        }),
+      ],
+      view: new View({
+        center: [3895000, 4770000],
+        zoom: 6,
+      }),
     });
   }
 
@@ -482,6 +511,8 @@ export class Properties implements OnInit, AfterViewInit {
     this.createNeighborhoods = [];
     this.selectedImageFile = null;
     this.isCreateModalOpen = true;
+    this.drawSource.clear();
+    setTimeout(() => this.initModalMap('create-map-target'), 100);
   }
 
   closeCreateModal(): void {
@@ -567,8 +598,10 @@ export class Properties implements OnInit, AfterViewInit {
   }
 
   startDrawingMode(): void {
-    this.isCreateModalOpen = false;
     this.drawSource.clear();
+    if (this.drawInteraction) {
+      this.modalMap.removeInteraction(this.drawInteraction);
+    }
     this.drawInteraction = new Draw({
       source: this.drawSource,
       type: 'Polygon',
@@ -576,7 +609,7 @@ export class Properties implements OnInit, AfterViewInit {
       maxPoints: 4,
     });
 
-    this.map.addInteraction(this.drawInteraction);
+    this.modalMap.addInteraction(this.drawInteraction);
     this.drawInteraction.on('drawend', (event) => {
       const wktFormat = new WKT();
       const wktString = wktFormat.writeFeature(event.feature, {
@@ -585,10 +618,90 @@ export class Properties implements OnInit, AfterViewInit {
       });
 
       this.createForm.patchValue({ geometry: wktString });
-
-      this.map.removeInteraction(this.drawInteraction);
-      this.isCreateModalOpen = true;
+      this.modalMap.removeInteraction(this.drawInteraction);
       this.cdr.detectChanges();
+    });
+  }
+
+  resetDrawing(): void {
+    this.drawSource.clear();
+    this.createForm.patchValue({ geometry: '' });
+    if (this.drawInteraction) {
+      this.modalMap.removeInteraction(this.drawInteraction);
+    }
+  }
+  selectedIds: Set<string> = new Set<string>();
+
+  toggleSelection(id: string) {
+    if (this.selectedIds.has(id)) {
+      this.selectedIds.delete(id);
+    } else {
+      this.selectedIds.add(id);
+    }
+  }
+
+  toggleAllSelection(event: any) {
+    const isChecked = event.target.checked;
+    if (isChecked) {
+      this.properties.forEach(p => this.selectedIds.add(p.id));
+    } else {
+      this.selectedIds.clear();
+    }
+  }
+
+  isAllSelected(): boolean {
+    return this.properties.length > 0 && this.properties.every(p => this.selectedIds.has(p.id));
+  }
+
+  exportToExcel(): void {
+    const filterValue = this.filterForm.value;
+    const filter: PropertyFilter = {
+      pageNumber: this.currentPage,
+      pageSize: this.pageSize,
+      selectedIds: Array.from(this.selectedIds),
+      ...filterValue
+    };
+
+    this.propertiesService.exportToExcel(filter).subscribe({
+      next: (blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'Properties.xlsx';
+        a.click();
+        window.URL.revokeObjectURL(url);
+        this.successMessage.set('Properties exported to Excel successfully.');
+      },
+      error: (err) => {
+        console.error('Failed to export Excel', err);
+        this.errorMessage.set('Failed to export properties to Excel.');
+      }
+    });
+  }
+
+  exportToPdf(): void {
+    const filterValue = this.filterForm.value;
+    const filter: PropertyFilter = {
+      pageNumber: this.currentPage,
+      pageSize: this.pageSize,
+      selectedIds: Array.from(this.selectedIds),
+      ...filterValue
+    };
+
+    this.propertiesService.exportToPdf(filter).subscribe({
+      next: (blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'Properties.pdf';
+        a.click();
+        window.URL.revokeObjectURL(url);
+        this.successMessage.set('Properties exported to PDF successfully.');
+      },
+      error: (err) => {
+        console.error('Failed to export PDF', err);
+        this.errorMessage.set('Failed to export properties to PDF.');
+      }
     });
   }
 
@@ -645,6 +758,23 @@ export class Properties implements OnInit, AfterViewInit {
     this.selectedImageFile = null;
     this.selectedImagePreview = null;
     this.currentUpdateImage = null;
+    this.drawSource.clear();
+
+    setTimeout(() => {
+      this.initModalMap('update-map-target');
+      if (property.geometry) {
+        const wktFormat = new WKT();
+        const feature = wktFormat.readFeature(property.geometry, {
+          dataProjection: 'EPSG:4326',
+          featureProjection: 'EPSG:3857',
+        });
+        this.drawSource.addFeature(feature);
+        const extent = this.drawSource.getExtent();
+        if (extent) {
+          this.modalMap.getView().fit(extent, { padding: [50, 50, 50, 50], maxZoom: 18 });
+        }
+      }
+    }, 100);
 
     if (property.imagePath) {
       this.propertiesService.getPropertyImage(property.id).subscribe({
@@ -731,8 +861,10 @@ export class Properties implements OnInit, AfterViewInit {
   }
 
   startDrawingModeUpdate(): void {
-    this.isEditModalOpen = false;
     this.drawSource.clear();
+    if (this.drawInteraction) {
+      this.modalMap.removeInteraction(this.drawInteraction);
+    }
     this.drawInteraction = new Draw({
       source: this.drawSource,
       type: 'Polygon',
@@ -740,7 +872,7 @@ export class Properties implements OnInit, AfterViewInit {
       maxPoints: 4,
     });
 
-    this.map.addInteraction(this.drawInteraction);
+    this.modalMap.addInteraction(this.drawInteraction);
     this.drawInteraction.on('drawend', (event) => {
       const wktFormat = new WKT();
       const wktString = wktFormat.writeFeature(event.feature, {
@@ -749,10 +881,16 @@ export class Properties implements OnInit, AfterViewInit {
       });
 
       this.updateForm.patchValue({ geometry: wktString });
-
-      this.map.removeInteraction(this.drawInteraction);
-      this.isEditModalOpen = true;
+      this.modalMap.removeInteraction(this.drawInteraction);
       this.cdr.detectChanges();
     });
+  }
+
+  resetDrawingUpdate(): void {
+    this.drawSource.clear();
+    this.updateForm.patchValue({ geometry: '' });
+    if (this.drawInteraction) {
+      this.modalMap.removeInteraction(this.drawInteraction);
+    }
   }
 }

@@ -202,7 +202,12 @@ export class AreaAnalysis implements OnInit, OnDestroy {
           });
 
           this.vectorSource.clear();
-          feature.set('label', 'Result');
+          
+          let resultLabel = 'Result';
+          if (operation === 'UnionAB') resultLabel = 'D';
+          else if (operation === 'UnionABC') resultLabel = 'E';
+          
+          feature.set('label', resultLabel);
           this.vectorSource.addFeature(feature);
 
           const extent = this.vectorSource.getExtent();
@@ -210,7 +215,7 @@ export class AreaAnalysis implements OnInit, OnDestroy {
             this.map.getView().fit(extent, { padding: [50, 50, 50, 50], maxZoom: 15 });
           }
 
-          this.showSuccess(res.message || 'Analysis completed successfully.');
+          this.showSuccess(res.message || 'Analysis completed and saved successfully.');
         } else {
           this.showError(res.message || 'No geometry resulted from this operation.');
         }
@@ -219,6 +224,27 @@ export class AreaAnalysis implements OnInit, OnDestroy {
         this.showError(err.error?.message || 'Computation failed.');
       },
     });
+  }
+
+  showOriginals(): void {
+    this.vectorSource.clear();
+    this.surfaceArea = null;
+    this.successMessage = 'Showing original geometries.';
+    this.errorMessage = null;
+
+    const labels = ['A', 'B', 'C'];
+    this.polygons.forEach((wkt, index) => {
+      if (index < 3) {
+        const feature = this.wktFormat.readFeature(wkt);
+        feature.set('label', labels[index]);
+        this.vectorSource.addFeature(feature);
+      }
+    });
+
+    const extent = this.vectorSource.getExtent();
+    if (extent) {
+      this.map.getView().fit(extent, { padding: [50, 50, 50, 50], maxZoom: 15 });
+    }
   }
 
   clearMap(): void {

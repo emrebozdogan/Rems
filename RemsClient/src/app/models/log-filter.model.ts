@@ -7,4 +7,5 @@ export interface LogFilter {
   ipAddress?: string;
   pageNumber: number;
   numberOfLogs: number;
+  selectedIds?: string[];
 }

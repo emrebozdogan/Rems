@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using RemsAPI.DTOs;
 using RemsAPI.Interfaces;
 
 namespace RemsAPI.Controllers
@@ -8,9 +9,10 @@ namespace RemsAPI.Controllers
     public class ExcelController(IExcelService excelService) : BaseController
     {
         [HttpGet]
-        public async Task<IActionResult> DownloadExcelAsync()
+        public async Task<IActionResult> DownloadExcelAsync([FromServices] ILogService logService, [FromQuery] LogFilterDto logFilterDto)
         {
-            var excelFile = await excelService.ExportLogsToExcelAsync();
+            var logs = await logService.GetAllFilteredLogsAsync(logFilterDto);
+            var excelFile = await excelService.ExportLogsToExcelAsync(logs);
             string contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
             string fileName = "RemsLogs.xlsx";
 

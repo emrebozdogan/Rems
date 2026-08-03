@@ -10,4 +10,5 @@ public class LogFilterDto
   public string? IpAddress { get; set; }
   public int PageNumber { get; set; } = 1;
   public int NumberOfLogs { get; set; } = 10;
+  public List<string>? SelectedIds { get; set; }
 }

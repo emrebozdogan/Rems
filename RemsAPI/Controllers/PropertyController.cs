@@ -63,5 +63,27 @@ namespace RemsAPI.Controllers
             var result = await propertyService.GetPropertyImage(propertyId);
             return File(result, "image/jpeg");
         }
+        
+        [HttpGet("export/excel")]
+        public async Task<IActionResult> ExportPropertiesToExcelAsync([FromServices] IExcelService excelService, [FromQuery] PropertyFilterDto propertyFilterDto)
+        {
+            var userRole = User.FindFirstValue(ClaimTypes.Role)!;
+            var properties = await propertyService.GetAllFilteredPropertiesAsync(UserId, userRole, propertyFilterDto);
+            var excelFile = await excelService.ExportPropertiesToExcelAsync(properties);
+            string contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+            string fileName = "Properties.xlsx";
+            return File(excelFile, contentType, fileName);
+        }
+
+        [HttpGet("export/pdf")]
+        public async Task<IActionResult> ExportPropertiesToPdfAsync([FromServices] IPdfService pdfService, [FromQuery] PropertyFilterDto propertyFilterDto)
+        {
+            var userRole = User.FindFirstValue(ClaimTypes.Role)!;
+            var properties = await propertyService.GetAllFilteredPropertiesAsync(UserId, userRole, propertyFilterDto);
+            var pdfFile = await pdfService.ExportPropertiesToPdfAsync(properties);
+            string contentType = "application/pdf";
+            string fileName = "Properties.pdf";
+            return File(pdfFile, contentType, fileName);
+        }
     }
 }

@@ -9,4 +9,5 @@ export interface PropertyFilter {
   ownerId?: string;
   pageNumber: number;
   pageSize: number;
+  selectedIds?: string[];
 }

@@ -8,12 +8,18 @@ namespace RemsAPI.Services;
 
 public class LogService(RemsDbContext context, IMapper mapper) : ILogService
 {
-  public async Task<PaginatedResults<LogDto>> GetLogsAsync(LogFilterDto logFilterDto)
+  private class LogUserPair
+  {
+      public RemsAPI.Entities.Log Log { get; set; } = null!;
+      public RemsAPI.Entities.User? User { get; set; }
+  }
+
+  private IQueryable<LogUserPair> BuildFilteredLogQuery(LogFilterDto logFilterDto)
   {
     var query = from l in context.Logs.AsNoTracking()
                 join u in context.Users on l.UserId equals u.Id into userGroup
                 from u in userGroup.DefaultIfEmpty()
-                select new { Log = l, User = u };
+                select new LogUserPair { Log = l, User = u };
 
     if (!string.IsNullOrEmpty(logFilterDto.UserName))
     {
@@ -43,6 +49,17 @@ public class LogService(RemsDbContext context, IMapper mapper) : ILogService
     {
       query = query.Where(x => EF.Functions.ILike(x.Log.IpAddress, $"%{logFilterDto.IpAddress}%"));
     }
+    if (logFilterDto.SelectedIds != null && logFilterDto.SelectedIds.Any())
+    {
+      query = query.Where(x => logFilterDto.SelectedIds.Contains(x.Log.Id));
+    }
+
+    return query;
+  }
+
+  public async Task<PaginatedResults<LogDto>> GetLogsAsync(LogFilterDto logFilterDto)
+  {
+    var query = BuildFilteredLogQuery(logFilterDto);
 
     int totalCount = await query.CountAsync();
 
@@ -68,5 +85,22 @@ public class LogService(RemsDbContext context, IMapper mapper) : ILogService
     };
 
     return logs;
+  }
+
+  public async Task<List<LogDto>> GetAllFilteredLogsAsync(LogFilterDto logFilterDto)
+  {
+    var query = BuildFilteredLogQuery(logFilterDto);
+
+    var items = await query.OrderByDescending(x => x.Log.Timestamp).ToListAsync();
+
+    return items.Select(x => {
+        var logDto = mapper.Map<LogDto>(x.Log);
+        var userName = x.User != null ? x.User.Name : "Unknown";
+        logDto.UserName = userName;
+        if (logDto.Description != null && logDto.Description.Contains(x.Log.UserId)) {
+            logDto.Description = logDto.Description.Replace(x.Log.UserId, userName);
+        }
+        return logDto;
+    }).ToList();
   }
 }

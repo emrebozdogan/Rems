@@ -69,4 +69,46 @@ export class PropertiesService {
   updateProperty(propertyData: any) {
     return this.http.put(`${this.apiUrl}/Property`, propertyData);
   }
+
+  exportToExcel(filter: PropertyFilter): Observable<Blob> {
+    let params = new HttpParams();
+
+    if (filter.cityName) params = params.set('cityName', filter.cityName);
+    if (filter.districtName) params = params.set('districtName', filter.districtName);
+    if (filter.neighborhoodName) params = params.set('neighborhoodName', filter.neighborhoodName);
+    if (filter.propertyType) params = params.set('propertyType', filter.propertyType);
+    if (filter.parcelNumber) params = params.set('parcelNumber', filter.parcelNumber);
+    if (filter.lotNumber) params = params.set('lotNumber', filter.lotNumber);
+    if (filter.address) params = params.set('address', filter.address);
+    if (filter.ownerId) params = params.set('ownerId', filter.ownerId);
+
+    if (filter.selectedIds && filter.selectedIds.length > 0) {
+      filter.selectedIds.forEach(id => {
+        params = params.append('selectedIds', id);
+      });
+    }
+
+    return this.http.get(`${this.apiUrl}/Property/export/excel`, { params, responseType: 'blob' });
+  }
+
+  exportToPdf(filter: PropertyFilter): Observable<Blob> {
+    let params = new HttpParams();
+
+    if (filter.cityName) params = params.set('cityName', filter.cityName);
+    if (filter.districtName) params = params.set('districtName', filter.districtName);
+    if (filter.neighborhoodName) params = params.set('neighborhoodName', filter.neighborhoodName);
+    if (filter.propertyType) params = params.set('propertyType', filter.propertyType);
+    if (filter.parcelNumber) params = params.set('parcelNumber', filter.parcelNumber);
+    if (filter.lotNumber) params = params.set('lotNumber', filter.lotNumber);
+    if (filter.address) params = params.set('address', filter.address);
+    if (filter.ownerId) params = params.set('ownerId', filter.ownerId);
+
+    if (filter.selectedIds && filter.selectedIds.length > 0) {
+      filter.selectedIds.forEach(id => {
+        params = params.append('selectedIds', id);
+      });
+    }
+
+    return this.http.get(`${this.apiUrl}/Property/export/pdf`, { params, responseType: 'blob' });
+  }
 }

@@ -59,6 +59,11 @@
           <button class="btn btn-success" (click)="computeUnionABC()" [disabled]="polygons.length < 3">
             Compute A ∪ B ∪ C
           </button>
+          @if (surfaceArea !== null) {
+          <button class="btn btn-info text-white mt-2 shadow-sm" (click)="showOriginals()">
+            <i class="bi bi-eye me-2"></i>Show Originals (A, B, C)
+          </button>
+          }
         </div>
 
         <hr class="text-muted">

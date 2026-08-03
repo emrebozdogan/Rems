@@ -11,25 +11,11 @@ namespace RemsAPI.Services;
 
 public class PdfService(RemsDbContext context, IMapper mapper) : IPdfService
 {
-  public async Task<MemoryStream> ExportLogsToPdfAsync()
+  public async Task<MemoryStream> ExportLogsToPdfAsync(List<LogDto> logs)
   {
     QuestPDF.Settings.License = LicenseType.Community;
 
     var stream = new MemoryStream();
-
-    var logs = await context.Logs.AsNoTracking().ToListAsync();
-    var userIds = logs.Select(i => i.UserId).Distinct().ToList();
-    var users = await context.Users.Where(u => userIds.Contains(u.Id)).ToDictionaryAsync(u => u.Id, u => u.Name);
-
-    var logsDto = logs.Select(l => {
-        var logDto = mapper.Map<LogDto>(l);
-        var userName = users.ContainsKey(l.UserId) ? users[l.UserId] : "Unknown";
-        logDto.UserName = userName;
-        if (logDto.Description != null && logDto.Description.Contains(l.UserId)) {
-            logDto.Description = logDto.Description.Replace(l.UserId, userName);
-        }
-        return logDto;
-    }).ToList();
 
     Document.Create(container =>
     {
@@ -69,7 +55,7 @@ public class PdfService(RemsDbContext context, IMapper mapper) : IPdfService
           });
 
           int index = 1;
-          foreach (var log in logsDto)
+          foreach (var log in logs)
           {
             table.Cell().BorderBottom(2).Padding(8).Text(index.ToString());
             table.Cell().BorderBottom(2).Padding(8).Text(log.UserName ?? "Unknown");
@@ -79,6 +65,66 @@ public class PdfService(RemsDbContext context, IMapper mapper) : IPdfService
             table.Cell().BorderBottom(2).Padding(8).Text(log.Timestamp.ToString());
             table.Cell().BorderBottom(2).Padding(8).Text(log.IpAddress);
             index++;
+          }
+        });
+      });
+    }).GeneratePdf(stream);
+    stream.Position = 0;
+    return stream;
+  }
+
+  public async Task<MemoryStream> ExportPropertiesToPdfAsync(List<PropertyDto> properties)
+  {
+    QuestPDF.Settings.License = LicenseType.Community;
+
+    var stream = new MemoryStream();
+
+    Document.Create(container =>
+    {
+      container.Page(page =>
+      {
+        page.Size(PageSizes.A4.Landscape());
+        page.Margin(2, Unit.Centimetre);
+        page.DefaultTextStyle(x => x.FontSize(9));
+
+        page.Header()
+          .Text("Property Records")
+          .FontSize(24)
+          .FontColor(Colors.Blue.Medium)
+          .Bold();
+        page.Content().Table(table =>
+        {
+          table.ColumnsDefinition(columns =>
+          {
+            columns.RelativeColumn(); // city
+            columns.RelativeColumn(); // district
+            columns.RelativeColumn(); // neighborhood
+            columns.RelativeColumn(); // parcel
+            columns.RelativeColumn(); // lot
+            columns.RelativeColumn(3); // address
+            columns.RelativeColumn(); // property type
+          });
+
+          table.Header(header =>
+          {
+            header.Cell().BorderBottom(2).Padding(8).Text("City");
+            header.Cell().BorderBottom(2).Padding(8).Text("District");
+            header.Cell().BorderBottom(2).Padding(8).Text("Neighborhood");
+            header.Cell().BorderBottom(2).Padding(8).Text("Parcel No");
+            header.Cell().BorderBottom(2).Padding(8).Text("Lot No");
+            header.Cell().BorderBottom(2).Padding(8).Text("Address");
+            header.Cell().BorderBottom(2).Padding(8).Text("Type");
+          });
+
+          foreach (var property in properties)
+          {
+            table.Cell().BorderBottom(1).Padding(8).Text(property.CityName ?? "Unknown");
+            table.Cell().BorderBottom(1).Padding(8).Text(property.DistrictName ?? "Unknown");
+            table.Cell().BorderBottom(1).Padding(8).Text(property.NeighborhoodName ?? "Unknown");
+            table.Cell().BorderBottom(1).Padding(8).Text(property.ParcelNumber);
+            table.Cell().BorderBottom(1).Padding(8).Text(property.LotNumber);
+            table.Cell().BorderBottom(1).Padding(8).Text(property.Address);
+            table.Cell().BorderBottom(1).Padding(8).Text(property.PropertyType);
           }
         });
       });

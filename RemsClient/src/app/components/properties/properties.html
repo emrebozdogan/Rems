@@ -115,10 +115,10 @@
           Import from Excel
         </button>
         }
-        <button type="button" class="btn btn-outline-secondary btn-sm" disabled title="Not implemented yet">
+        <button type="button" class="btn btn-outline-secondary btn-sm" (click)="exportToExcel()">
           Export to Excel
         </button>
-        <button type="button" class="btn btn-outline-secondary btn-sm" disabled title="Not implemented yet">
+        <button type="button" class="btn btn-outline-secondary btn-sm" (click)="exportToPdf()">
           Export to PDF
         </button>
         @if (!isAdmin) {
@@ -133,6 +133,9 @@
       <table class="table table-hover align-middle mb-0">
         <thead class="table-light">
           <tr>
+            <th style="width: 40px;">
+              <input type="checkbox" class="form-check-input" [checked]="isAllSelected()" (change)="toggleAllSelection($event)">
+            </th>
             <th>City</th>
             <th>District</th>
             <th>Neighborhood</th>
@@ -146,6 +149,9 @@
         <tbody>
           @for (prop of properties; track prop.id) {
           <tr>
+            <td>
+              <input type="checkbox" class="form-check-input" [checked]="selectedIds.has(prop.id)" (change)="toggleSelection(prop.id)">
+            </td>
             <td>{{ prop.cityName }}</td>
             <td>{{ prop.districtName }}</td>
             <td>{{ prop.neighborhoodName }}</td>
@@ -215,7 +221,7 @@
 
 @if (isCreateModalOpen) {
 <div class="modal fade show d-block" tabindex="-1" style="background: rgba(0, 0, 0, 0.5)">
-  <div class="modal-dialog modal-dialog-centered modal-lg">
+  <div class="modal-dialog modal-dialog-centered" style="max-width: 90vw;">
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title fw-bold">Add New Property</h5>
@@ -223,114 +229,111 @@
           (click)="closeCreateModal(); drawSource.clear()"></button>
       </div>
       <div class="modal-body">
-        <form [formGroup]="createForm" (ngSubmit)="submitCreateForm()">
-          <div class="row g-3 mb-3">
-            <div class="col-md-4">
-              <label class="form-label text-secondary small fw-bold">City <span class="text-danger">*</span></label>
-              <select class="form-select form-select-sm" formControlName="cityId" (change)="onCreateCityChange($event)"
-                [class.is-invalid]="
-                    createForm.get('cityId')?.invalid && createForm.get('cityId')?.touched
-                  ">
-                <option value="">Select City</option>
-                @for (city of cities; track city.id) {
-                <option [value]="city.id">{{ city.name }}</option>
-                }
-              </select>
-            </div>
-            <div class="col-md-4">
-              <label class="form-label text-secondary small fw-bold">District <span class="text-danger">*</span></label>
-              <select class="form-select form-select-sm" formControlName="districtId"
-                (change)="onCreateDistrictChange($event)" [class.is-invalid]="
-                    createForm.get('districtId')?.invalid && createForm.get('districtId')?.touched
-                  ">
-                <option value="">Select District</option>
-                @for (district of createDistricts; track district.id) {
-                <option [value]="district.id">{{ district.name }}</option>
-                }
-              </select>
-            </div>
-            <div class="col-md-4">
-              <label class="form-label text-secondary small fw-bold">Neighborhood <span
-                  class="text-danger">*</span></label>
-              <select class="form-select form-select-sm" formControlName="neighborhoodId" [class.is-invalid]="
-                    createForm.get('neighborhoodId')?.invalid &&
-                    createForm.get('neighborhoodId')?.touched
-                  ">
-                <option value="">Select Neighborhood</option>
-                @for (neighborhood of createNeighborhoods; track neighborhood.id) {
-                <option [value]="neighborhood.id">{{ neighborhood.name }}</option>
-                }
-              </select>
-            </div>
-          </div>
-
-          <div class="row g-3 mb-3">
-            <div class="col-md-6">
-              <label class="form-label text-secondary small fw-bold">Parcel Number <span
-                  class="text-danger">*</span></label>
-              <input type="text" class="form-control form-control-sm" formControlName="parcelNumber"
-                [class.is-invalid]="
-                    createForm.get('parcelNumber')?.invalid &&
-                    createForm.get('parcelNumber')?.touched
-                  " />
-            </div>
-            <div class="col-md-6">
-              <label class="form-label text-secondary small fw-bold">Lot Number <span
-                  class="text-danger">*</span></label>
-              <input type="text" class="form-control form-control-sm" formControlName="lotNumber" [class.is-invalid]="
-                    createForm.get('lotNumber')?.invalid && createForm.get('lotNumber')?.touched
-                  " />
-            </div>
-          </div>
-
-          <div class="mb-3">
-            <label class="form-label text-secondary small fw-bold">Address <span class="text-danger">*</span></label>
-            <textarea class="form-control form-control-sm" rows="2" formControlName="address" [class.is-invalid]="
-                  createForm.get('address')?.invalid && createForm.get('address')?.touched
-                "></textarea>
-          </div>
-
-          <div class="row g-3 mb-3">
-            <div class="col-md-6">
-              <label class="form-label text-secondary small fw-bold">Property Type <span
-                  class="text-danger">*</span></label>
-              <select class="form-select form-select-sm" formControlName="propertyType" [class.is-invalid]="
-                    createForm.get('propertyType')?.invalid &&
-                    createForm.get('propertyType')?.touched
-                  ">
-                <option value="">Select Property Type</option>
-                <option value="Land">Land</option>
-                <option value="Buildings">Buildings</option>
-                <option value="Residences">Residences</option>
-              </select>
-            </div>
-            <div class="mb-3">
-              <label class="form-label text-danger small fw-bold">Geometry (WKT) *</label>
-              <div class="input-group">
-                <button type="button" class="btn btn-outline-primary" (click)="startDrawingMode()">
-                  Draw on the map
-                </button>
-                <input type="text" class="form-control" formControlName="geometry" placeholder="Click 'Draw on the map'"
-                  readonly />
+        <div class="row">
+          <div class="col-md-4">
+            <form [formGroup]="createForm" (ngSubmit)="submitCreateForm()">
+              <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                  <label class="form-label text-secondary small fw-bold">City <span class="text-danger">*</span></label>
+                  <select class="form-select form-select-sm" formControlName="cityId" (change)="onCreateCityChange($event)"
+                    [class.is-invalid]="createForm.get('cityId')?.invalid && createForm.get('cityId')?.touched">
+                    <option value="">Select City</option>
+                    @for (city of cities; track city.id) {
+                    <option [value]="city.id">{{ city.name }}</option>
+                    }
+                  </select>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label text-secondary small fw-bold">District <span class="text-danger">*</span></label>
+                  <select class="form-select form-select-sm" formControlName="districtId"
+                    (change)="onCreateDistrictChange($event)"
+                    [class.is-invalid]="createForm.get('districtId')?.invalid && createForm.get('districtId')?.touched">
+                    <option value="">Select District</option>
+                    @for (district of createDistricts; track district.id) {
+                    <option [value]="district.id">{{ district.name }}</option>
+                    }
+                  </select>
+                </div>
+                <div class="col-md-12 mt-2">
+                  <label class="form-label text-secondary small fw-bold">Neighborhood <span
+                      class="text-danger">*</span></label>
+                  <select class="form-select form-select-sm" formControlName="neighborhoodId"
+                    [class.is-invalid]="createForm.get('neighborhoodId')?.invalid && createForm.get('neighborhoodId')?.touched">
+                    <option value="">Select Neighborhood</option>
+                    @for (neighborhood of createNeighborhoods; track neighborhood.id) {
+                    <option [value]="neighborhood.id">{{ neighborhood.name }}</option>
+                    }
+                  </select>
+                </div>
               </div>
-            </div>
-          </div>
 
-          <div class="mb-3">
-            <label class="form-label text-secondary small fw-bold">Image (Optional)</label>
-            <input type="file" class="form-control form-control-sm" accept="image/png, image/jpeg"
-              (change)="onImageSelected($event)" />
-          </div>
+              <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                  <label class="form-label text-secondary small fw-bold">Parcel Number <span
+                      class="text-danger">*</span></label>
+                  <input type="text" class="form-control form-control-sm" formControlName="parcelNumber"
+                    [class.is-invalid]="createForm.get('parcelNumber')?.invalid && createForm.get('parcelNumber')?.touched" />
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label text-secondary small fw-bold">Lot Number <span
+                      class="text-danger">*</span></label>
+                  <input type="text" class="form-control form-control-sm" formControlName="lotNumber"
+                    [class.is-invalid]="createForm.get('lotNumber')?.invalid && createForm.get('lotNumber')?.touched" />
+                </div>
+              </div>
 
-          <div class="d-flex justify-content-end gap-2 mt-4">
-            <button type="button" class="btn btn-secondary" (click)="closeCreateModal(); drawSource.clear()">
-              Cancel
-            </button>
-            <button type="submit" class="btn btn-primary" [disabled]="createForm.invalid">
-              Save Property
-            </button>
+              <div class="mb-3">
+                <label class="form-label text-secondary small fw-bold">Address <span class="text-danger">*</span></label>
+                <textarea class="form-control form-control-sm" rows="2" formControlName="address"
+                  [class.is-invalid]="createForm.get('address')?.invalid && createForm.get('address')?.touched"></textarea>
+              </div>
+
+              <div class="row g-3 mb-3">
+                <div class="col-md-12">
+                  <label class="form-label text-secondary small fw-bold">Property Type <span
+                      class="text-danger">*</span></label>
+                  <select class="form-select form-select-sm" formControlName="propertyType"
+                    [class.is-invalid]="createForm.get('propertyType')?.invalid && createForm.get('propertyType')?.touched">
+                    <option value="">Select Property Type</option>
+                    <option value="Land">Land</option>
+                    <option value="Buildings">Buildings</option>
+                    <option value="Residences">Residences</option>
+                  </select>
+                </div>
+                <div class="col-md-12 mt-2">
+                  <label class="form-label text-danger small fw-bold">Geometry (WKT) *</label>
+                  <div class="input-group input-group-sm">
+                    <button type="button" class="btn btn-outline-primary" (click)="startDrawingMode()">
+                      Draw
+                    </button>
+                    <button type="button" class="btn btn-outline-danger" (click)="resetDrawing()">
+                      Reset
+                    </button>
+                    <input type="text" class="form-control" formControlName="geometry" placeholder="Click 'Draw'"
+                      readonly />
+                  </div>
+                </div>
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label text-secondary small fw-bold">Image (Optional)</label>
+                <input type="file" class="form-control form-control-sm" accept="image/png, image/jpeg"
+                  (change)="onImageSelected($event)" />
+              </div>
+            </form>
           </div>
-        </form>
+          <div class="col-md-8">
+            <div id="create-map-target" class="w-100 h-100 border rounded" style="min-height: 500px;"></div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeCreateModal(); drawSource.clear()">
+          Cancel
+        </button>
+        <button type="button" class="btn btn-primary" [disabled]="createForm.invalid" (click)="submitCreateForm()">
+          Save Property
+        </button>
       </div>
     </div>
   </div>
@@ -339,7 +342,7 @@
 
 @if (isEditModalOpen) {
 <div class="modal fade show d-block" tabindex="-1" style="background: rgba(0, 0, 0, 0.5)">
-  <div class="modal-dialog modal-dialog-centered modal-lg">
+  <div class="modal-dialog modal-dialog-centered" style="max-width: 90vw;">
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title fw-bold">Update Property</h5>
@@ -347,125 +350,122 @@
           (click)="isEditModalOpen = false; drawSource.clear()"></button>
       </div>
       <div class="modal-body">
-        <form [formGroup]="updateForm" (ngSubmit)="submitUpdateForm()">
-          <div class="row g-3 mb-3">
-            <div class="col-md-4">
-              <label class="form-label text-secondary small fw-bold">City <span class="text-danger">*</span></label>
-              <select class="form-select form-select-sm" formControlName="cityId" (change)="onUpdateCityChange($event)"
-                [class.is-invalid]="
-                    updateForm.get('cityId')?.invalid && updateForm.get('cityId')?.touched
-                  ">
-                <option value="">Select City</option>
-                @for (city of cities; track city.id) {
-                <option [value]="city.id">{{ city.name }}</option>
-                }
-              </select>
-            </div>
-            <div class="col-md-4">
-              <label class="form-label text-secondary small fw-bold">District <span class="text-danger">*</span></label>
-              <select class="form-select form-select-sm" formControlName="districtId"
-                (change)="onUpdateDistrictChange($event)" [class.is-invalid]="
-                    updateForm.get('districtId')?.invalid && updateForm.get('districtId')?.touched
-                  ">
-                <option value="">Select District</option>
-                @for (district of createDistricts; track district.id) {
-                <option [value]="district.id">{{ district.name }}</option>
-                }
-              </select>
-            </div>
-            <div class="col-md-4">
-              <label class="form-label text-secondary small fw-bold">Neighborhood <span
-                  class="text-danger">*</span></label>
-              <select class="form-select form-select-sm" formControlName="neighborhoodId" [class.is-invalid]="
-                    updateForm.get('neighborhoodId')?.invalid &&
-                    updateForm.get('neighborhoodId')?.touched
-                  ">
-                <option value="">Select Neighborhood</option>
-                @for (neighborhood of createNeighborhoods; track neighborhood.id) {
-                <option [value]="neighborhood.id">{{ neighborhood.name }}</option>
-                }
-              </select>
-            </div>
-          </div>
-
-          <div class="row g-3 mb-3">
-            <div class="col-md-6">
-              <label class="form-label text-secondary small fw-bold">Parcel Number <span
-                  class="text-danger">*</span></label>
-              <input type="text" class="form-control form-control-sm" formControlName="parcelNumber"
-                [class.is-invalid]="
-                    updateForm.get('parcelNumber')?.invalid &&
-                    updateForm.get('parcelNumber')?.touched
-                  " />
-            </div>
-            <div class="col-md-6">
-              <label class="form-label text-secondary small fw-bold">Lot Number <span
-                  class="text-danger">*</span></label>
-              <input type="text" class="form-control form-control-sm" formControlName="lotNumber" [class.is-invalid]="
-                    updateForm.get('lotNumber')?.invalid && updateForm.get('lotNumber')?.touched
-                  " />
-            </div>
-          </div>
-
-          <div class="mb-3">
-            <label class="form-label text-secondary small fw-bold">Address <span class="text-danger">*</span></label>
-            <textarea class="form-control form-control-sm" rows="2" formControlName="address" [class.is-invalid]="
-                  updateForm.get('address')?.invalid && updateForm.get('address')?.touched
-                "></textarea>
-          </div>
-
-          <div class="row g-3 mb-3">
-            <div class="col-md-6">
-              <label class="form-label text-secondary small fw-bold">Property Type <span
-                  class="text-danger">*</span></label>
-              <select class="form-select form-select-sm" formControlName="propertyType" [class.is-invalid]="
-                    updateForm.get('propertyType')?.invalid &&
-                    updateForm.get('propertyType')?.touched
-                  ">
-                <option value="">Select Property Type</option>
-                <option value="Land">Land</option>
-                <option value="Buildings">Buildings</option>
-                <option value="Residences">Residences</option>
-              </select>
-            </div>
-            <div class="mb-3">
-              <label class="form-label text-danger small fw-bold">Geometry (WKT) *</label>
-              <div class="input-group">
-                <button type="button" class="btn btn-outline-primary" (click)="startDrawingModeUpdate()">
-                  Draw on the map
-                </button>
-                <input type="text" class="form-control" formControlName="geometry" placeholder="Click 'Draw on the map'"
-                  readonly />
+        <div class="row">
+          <div class="col-md-4">
+            <form [formGroup]="updateForm" (ngSubmit)="submitUpdateForm()">
+              <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                  <label class="form-label text-secondary small fw-bold">City <span class="text-danger">*</span></label>
+                  <select class="form-select form-select-sm" formControlName="cityId" (change)="onUpdateCityChange($event)"
+                    [class.is-invalid]="updateForm.get('cityId')?.invalid && updateForm.get('cityId')?.touched">
+                    <option value="">Select City</option>
+                    @for (city of cities; track city.id) {
+                    <option [value]="city.id">{{ city.name }}</option>
+                    }
+                  </select>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label text-secondary small fw-bold">District <span class="text-danger">*</span></label>
+                  <select class="form-select form-select-sm" formControlName="districtId"
+                    (change)="onUpdateDistrictChange($event)"
+                    [class.is-invalid]="updateForm.get('districtId')?.invalid && updateForm.get('districtId')?.touched">
+                    <option value="">Select District</option>
+                    @for (district of createDistricts; track district.id) {
+                    <option [value]="district.id">{{ district.name }}</option>
+                    }
+                  </select>
+                </div>
+                <div class="col-md-12 mt-2">
+                  <label class="form-label text-secondary small fw-bold">Neighborhood <span
+                      class="text-danger">*</span></label>
+                  <select class="form-select form-select-sm" formControlName="neighborhoodId"
+                    [class.is-invalid]="updateForm.get('neighborhoodId')?.invalid && updateForm.get('neighborhoodId')?.touched">
+                    <option value="">Select Neighborhood</option>
+                    @for (neighborhood of createNeighborhoods; track neighborhood.id) {
+                    <option [value]="neighborhood.id">{{ neighborhood.name }}</option>
+                    }
+                  </select>
+                </div>
               </div>
-            </div>
-          </div>
 
-          <div class="mb-3">
-            <label class="form-label text-secondary small fw-bold">Image (Optional)</label>
-            <input type="file" class="form-control form-control-sm" accept="image/png, image/jpeg"
-              (change)="onImageSelected($event)" />
-            @if (selectedImagePreview) {
-              <div class="mt-2 text-center bg-light p-2 rounded border">
-                <p class="small text-muted mb-1 text-start">New Image Preview:</p>
-                <img [src]="selectedImagePreview" alt="New Preview" class="img-thumbnail rounded shadow-sm" style="max-height: 150px; object-fit: contain;" />
+              <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                  <label class="form-label text-secondary small fw-bold">Parcel Number <span
+                      class="text-danger">*</span></label>
+                  <input type="text" class="form-control form-control-sm" formControlName="parcelNumber"
+                    [class.is-invalid]="updateForm.get('parcelNumber')?.invalid && updateForm.get('parcelNumber')?.touched" />
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label text-secondary small fw-bold">Lot Number <span
+                      class="text-danger">*</span></label>
+                  <input type="text" class="form-control form-control-sm" formControlName="lotNumber"
+                    [class.is-invalid]="updateForm.get('lotNumber')?.invalid && updateForm.get('lotNumber')?.touched" />
+                </div>
               </div>
-            } @else if (currentUpdateImage) {
-              <div class="mt-2 text-center bg-light p-2 rounded border">
-                <p class="small text-muted mb-1 text-start">Current Image:</p>
-                <img [src]="currentUpdateImage" alt="Current Image" class="img-thumbnail rounded shadow-sm" style="max-height: 150px; object-fit: contain;" />
-              </div>
-            }
-          </div>
 
-          <div class="d-flex justify-content-end gap-2 mt-4">
-            <button type="button" class="btn btn-secondary" (click)="isEditModalOpen = false; drawSource.clear()">
-              Cancel
-            </button>
-            <button type="submit" class="btn btn-primary" [disabled]="updateForm.invalid">
-              Update Property
-            </button>
+              <div class="mb-3">
+                <label class="form-label text-secondary small fw-bold">Address <span class="text-danger">*</span></label>
+                <textarea class="form-control form-control-sm" rows="2" formControlName="address"
+                  [class.is-invalid]="updateForm.get('address')?.invalid && updateForm.get('address')?.touched"></textarea>
+              </div>
+
+              <div class="row g-3 mb-3">
+                <div class="col-md-12">
+                  <label class="form-label text-secondary small fw-bold">Property Type <span
+                      class="text-danger">*</span></label>
+                  <select class="form-select form-select-sm" formControlName="propertyType"
+                    [class.is-invalid]="updateForm.get('propertyType')?.invalid && updateForm.get('propertyType')?.touched">
+                    <option value="">Select Property Type</option>
+                    <option value="Land">Land</option>
+                    <option value="Buildings">Buildings</option>
+                    <option value="Residences">Residences</option>
+                  </select>
+                </div>
+                <div class="col-md-12 mt-2">
+                  <label class="form-label text-danger small fw-bold">Geometry (WKT) *</label>
+                  <div class="input-group input-group-sm">
+                    <button type="button" class="btn btn-outline-primary" (click)="startDrawingModeUpdate()">
+                      Draw
+                    </button>
+                    <button type="button" class="btn btn-outline-danger" (click)="resetDrawingUpdate()">
+                      Reset
+                    </button>
+                    <input type="text" class="form-control" formControlName="geometry" placeholder="Click 'Draw'"
+                      readonly />
+                  </div>
+                </div>
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label text-secondary small fw-bold">Image (Optional)</label>
+                <input type="file" class="form-control form-control-sm" accept="image/png, image/jpeg"
+                  (change)="onImageSelected($event)" />
+                @if (selectedImagePreview) {
+                  <div class="mt-2 text-center bg-light p-2 rounded border">
+                    <p class="small text-muted mb-1 text-start">New Image Preview:</p>
+                    <img [src]="selectedImagePreview" alt="New Preview" class="img-thumbnail rounded shadow-sm" style="max-height: 150px; object-fit: contain;" />
+                  </div>
+                } @else if (currentUpdateImage) {
+                  <div class="mt-2 text-center bg-light p-2 rounded border">
+                    <p class="small text-muted mb-1 text-start">Current Image:</p>
+                    <img [src]="currentUpdateImage" alt="Current Image" class="img-thumbnail rounded shadow-sm" style="max-height: 150px; object-fit: contain;" />
+                  </div>
+                }
+              </div>
+            </form>
           </div>
-        </form>
+          <div class="col-md-8">
+            <div id="update-map-target" class="w-100 h-100 border rounded" style="min-height: 500px;"></div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="isEditModalOpen = false; drawSource.clear()">
+          Cancel
+        </button>
+        <button type="button" class="btn btn-primary" [disabled]="updateForm.invalid" (click)="submitUpdateForm()">
+          Update Property
+        </button>
       </div>
     </div>
   </div>

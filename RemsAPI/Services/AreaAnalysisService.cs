@@ -76,7 +76,9 @@ public class AreaAnalysisService(RemsDbContext context, WKTReader reader) : IAre
     {
       ResultGeometry = resultGeometry.ToText(),
       SurfaceArea = resultGeometry.Area,
-      Message = "Analysis completed successfully."
+      Message = requiresSaving 
+        ? "Analysis completed and geometry saved to database successfully." 
+        : "Analysis completed successfully."
     };
   }
 }

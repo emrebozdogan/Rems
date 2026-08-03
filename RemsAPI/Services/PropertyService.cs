@@ -59,7 +59,7 @@ public class PropertyService(RemsDbContext context, IMapper mapper, WKTReader re
     throw new NotFoundException("The property you are trying to delete does not exist.");
   }
 
-  public async Task<PaginatedResults<PropertyDto>> GetFilteredPropertiesAsync(string userId, string userRole, PropertyFilterDto propertyFilterDto)
+  private IQueryable<Property> BuildFilteredPropertyQuery(string userId, string userRole, PropertyFilterDto propertyFilterDto)
   {
     var query = context.Properties.AsNoTracking().AsQueryable();
 
@@ -100,6 +100,18 @@ public class PropertyService(RemsDbContext context, IMapper mapper, WKTReader re
     {
       query = query.Where(p => p.Neighborhood!.District!.City!.Name.ToLower().Contains(propertyFilterDto.CityName.ToLower()));
     }
+    
+    if (propertyFilterDto.SelectedIds != null && propertyFilterDto.SelectedIds.Any())
+    {
+      query = query.Where(p => propertyFilterDto.SelectedIds.Contains(p.Id));
+    }
+    
+    return query;
+  }
+
+  public async Task<PaginatedResults<PropertyDto>> GetFilteredPropertiesAsync(string userId, string userRole, PropertyFilterDto propertyFilterDto)
+  {
+    var query = BuildFilteredPropertyQuery(userId, userRole, propertyFilterDto);
 
     var totalCount = await query.CountAsync();
     var items = await query
@@ -119,6 +131,21 @@ public class PropertyService(RemsDbContext context, IMapper mapper, WKTReader re
     };
 
     return properties;
+  }
+
+  public async Task<List<PropertyDto>> GetAllFilteredPropertiesAsync(string userId, string userRole, PropertyFilterDto propertyFilterDto)
+  {
+    var query = BuildFilteredPropertyQuery(userId, userRole, propertyFilterDto);
+    
+    var properties = await query
+      .Include(p => p.User)
+      .Include(p => p.Neighborhood!)
+        .ThenInclude(n => n.District!)
+          .ThenInclude(d => d.City)
+      .OrderBy(p => p.Id)
+      .ToListAsync();
+
+    return mapper.Map<List<PropertyDto>>(properties);
   }
 
   public async Task<PropertyDto> GetPropertyAsync(string propertyId, string userId)
