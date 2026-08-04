@@ -15,5 +15,20 @@ namespace RemsAPI.Controllers
             var result = await areaAnalysisService.PerformAnalysisAsync(areaAnalysisRequestDto, UserId);
             return Ok(result);
         }
+
+        [HttpPost("save-geometries")]
+        public async Task<IActionResult> SaveGeometriesAsync([FromBody] SaveGeometriesRequestDto request)
+        {
+            await areaAnalysisService.SaveGeometriesAsync(request, UserId);
+            return Ok(new { message = "Geometries saved successfully." });
+        }
+
+        [HttpGet("saved-geometries")]
+        public async Task<IActionResult> GetSavedGeometriesAsync()
+        {
+            var result = await areaAnalysisService.GetSavedGeometriesAsync(UserId);
+            if (result == null) return NotFound(new { message = "No saved geometries found." });
+            return Ok(result);
+        }
     }
 }

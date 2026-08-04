@@ -12,6 +12,7 @@ public class RemsDbContext(DbContextOptions options) : DbContext(options)
   public DbSet<Property> Properties { get; set; }
   public DbSet<Log> Logs { get; set; }
   public DbSet<AnalysisResult> AnalysisResults { get; set; }
+  public DbSet<SavedAnalysisGeometry> SavedAnalysisGeometries { get; set; }
 
   protected override void OnModelCreating(ModelBuilder modelBuilder)
   {

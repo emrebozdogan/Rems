@@ -81,4 +81,45 @@ public class AreaAnalysisService(RemsDbContext context, WKTReader reader) : IAre
         : "Analysis completed successfully."
     };
   }
+
+  public async Task SaveGeometriesAsync(SaveGeometriesRequestDto request, string userId)
+  {
+      var polygonA = reader.Read(request.PolygonA);
+      var polygonB = reader.Read(request.PolygonB);
+      var polygonC = reader.Read(request.PolygonC);
+
+      var existing = await context.SavedAnalysisGeometries.FindAsync(userId);
+      if (existing != null)
+      {
+          existing.PolygonA = polygonA;
+          existing.PolygonB = polygonB;
+          existing.PolygonC = polygonC;
+          context.SavedAnalysisGeometries.Update(existing);
+      }
+      else
+      {
+          var savedGeometry = new SavedAnalysisGeometry
+          {
+              UserId = userId,
+              PolygonA = polygonA,
+              PolygonB = polygonB,
+              PolygonC = polygonC
+          };
+          await context.SavedAnalysisGeometries.AddAsync(savedGeometry);
+      }
+      await context.SaveChangesAsync();
+  }
+
+  public async Task<SavedGeometriesResponseDto?> GetSavedGeometriesAsync(string userId)
+  {
+      var saved = await context.SavedAnalysisGeometries.FindAsync(userId);
+      if (saved == null) return null;
+
+      return new SavedGeometriesResponseDto
+      {
+          PolygonA = saved.PolygonA.ToText(),
+          PolygonB = saved.PolygonB.ToText(),
+          PolygonC = saved.PolygonC.ToText()
+      };
+  }
 }

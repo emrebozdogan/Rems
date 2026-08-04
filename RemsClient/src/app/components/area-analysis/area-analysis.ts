@@ -88,46 +88,31 @@ export class AreaAnalysis implements OnInit, OnDestroy {
   selectAutoSelect(): void {
     this.clearMap();
 
-    this.propertiesService.getProperties({ pageNumber: 1, pageSize: 50 }).subscribe({
+    this.analysisService.getSavedGeometries().subscribe({
       next: (res) => {
-        if (res.data && res.data.length >= 3) {
-          this.mode = 'Auto-Select';
-          const props = res.data.slice(0, 3);
-          const labels = ['A', 'B', 'C'];
-          props.forEach((p, idx) => {
-            if (p.geometry) {
-              const feature = this.wktFormat.readFeature(p.geometry, {
-                dataProjection: 'EPSG:4326',
-                featureProjection: 'EPSG:3857',
-              });
-              feature.set('label', labels[idx]);
-              this.vectorSource.addFeature(feature);
+        this.mode = 'Auto-Select';
+        this.polygons = [res.polygonA, res.polygonB, res.polygonC];
+        const labels = ['A', 'B', 'C'];
 
-              const wkt3857 = this.wktFormat.writeFeature(feature);
-              this.polygons.push(wkt3857);
-            }
-          });
+        this.polygons.forEach((wkt, idx) => {
+          const feature = this.wktFormat.readFeature(wkt);
+          feature.set('label', labels[idx]);
+          this.vectorSource.addFeature(feature);
+        });
 
-          if (this.polygons.length < 3) {
-            this.mode = null;
-            this.showError(
-              'Existing properties do not have valid geometries. Please use Manual Draw.',
-            );
-          } else {
-            this.showSuccess('Geometries A, B, and C loaded.');
-            const extent = this.vectorSource.getExtent();
-            if (extent) {
-              this.map.getView().fit(extent, { padding: [50, 50, 50, 50], maxZoom: 15 });
-            }
-          }
-        } else {
-          this.mode = null;
-          this.showError('No saved geometries found. Please use Manual Draw.');
+        this.showSuccess('Geometries A, B, and C loaded.');
+        const extent = this.vectorSource.getExtent();
+        if (extent) {
+          this.map.getView().fit(extent, { padding: [50, 50, 50, 50], maxZoom: 15 });
         }
       },
-      error: () => {
+      error: (err) => {
         this.mode = null;
-        this.showError('Failed to fetch properties.');
+        if (err.status === 404) {
+          this.showError('No saved geometries found. Please use Manual Draw.');
+        } else {
+          this.showError('Failed to load saved geometries.');
+        }
       },
     });
   }
@@ -157,7 +142,17 @@ export class AreaAnalysis implements OnInit, OnDestroy {
       if (this.polygons.length >= 3) {
         this.map.removeInteraction(this.drawInteraction!);
         this.drawInteraction = null;
-        this.showSuccess('Geometries A, B, and C completed.');
+        
+        const req = {
+          polygonA: this.polygons[0],
+          polygonB: this.polygons[1],
+          polygonC: this.polygons[2],
+        };
+
+        this.analysisService.saveGeometries(req).subscribe({
+          next: () => this.showSuccess('Geometries A, B, and C completed and saved.'),
+          error: () => this.showError('Geometries completed but failed to save.'),
+        });
       }
       this.cdr.detectChanges();
     });

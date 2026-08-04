@@ -109,6 +109,11 @@ public class UserService(RemsDbContext context, IMapper mapper) : IUserService
 
     if (user != null)
     {
+      if (user.Email.ToLower() != updateUserDto.Email.ToLower() && await EmailExistsAsync(updateUserDto.Email))
+      {
+        throw new ConflictException("This email is already registered!");
+      }
+
       user.Email = updateUserDto.Email;
       user.Name = updateUserDto.Name;
       user.Role = updateUserDto.Role;
